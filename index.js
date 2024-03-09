@@ -1,113 +1,130 @@
-// GIVEN I am taking a code quiz
-// WHEN I click the start button ()
-// THEN a timer starts and I am presented with a question
-// WHEN I answer a question
-// THEN I am presented with another question
-// WHEN I answer a question incorrectly
-// THEN time is subtracted from the clock
-// WHEN all questions are answered or the timer reaches 0
-// THEN the game is over
-// WHEN the game is over
-// THEN I can save my initials and my score
-
-const startButton = document.getElementById('start-btn');
-const quizContainer = document.getElementById('quiz');
-const questionElement = document.getElementById('question');
-const choicesElement = document.getElementById('choices');
+// Selecting DOM elements
+const startBtn = document.getElementById('start-btn');
+const questionContainer = document.getElementById('question');
+const choicesContainer = document.getElementById('choices');
 const resultsContainer = document.getElementById('results');
-const finalScoreElement = document.getElementById('final-score');
+const finalScoreSpan = document.getElementById('final-score');
 const initialsInput = document.getElementById('initials');
-const submitScoreButton = document.getElementById('submit-score');
+const submitScoreBtn = document.getElementById('submit-score');
+const quizContainer = document.getElementById('quiz');
 
-const questions = [
+// Quiz questions
+const quizQuestions = [
     {
-        question: "What does HTML stand for?",
-        choices: ["Hyper Text Markup Language", "Hyperlinks and Text Markup Language", "Home Tool Markup Language", "Hyperlink Text Markup Language"],
-        correctAnswer: 0
+        question: 'What does HTML stand for?',
+        choices: ['Hyper Text Markup Language', 'Hyperlinks and Text Markup Language', 'Home Tool Markup Language'],
+        correctAnswer: 'Hyper Text Markup Language'
     },
     {
-        question: "What does CSS stand for?",
-        choices: ["Computer Style Sheets", "Creative Style Sheets", "Cascading Style Sheets", "Colorful Style Sheets"],
-        correctAnswer: 2
+        question: 'Javascript is a _______ language?',
+        choices: ['Programming', 'Networking', 'None of These'],
+        correctAnswer: 'Programming'
     },
     {
-        question: "Inside which HTML element do we put the JavaScript?",
-        choices: ["<scripting>", "<js>", "<script>", "<javascript>"],
-        correctAnswer: 2
+        question: 'What is the DOM?',
+        choices: ['Document Object Model', 'Dissolved Organic Matter', 'Days On Market', 'Disk Operating Machine'],
+        correctAnswer: 'Document Object Model'
     }
-]
+];
 
-
+// Initialize variables
 let currentQuestionIndex = 0;
 let score = 0;
-let timer;
+let timeLeft = 60;
+let timerInterval;
 
 // Function to start the quiz
 function startQuiz() {
-    startButton.style.display = 'none';
-    quizContainer.style.display = 'block';
-    showQuestion();
+    startBtn.style.display = 'none';
+    resultsContainer.style.display = 'none';
+    displayQuestion();
     startTimer();
 }
 
 // Function to display a question
-function showQuestion() {
-    const currentQuestion = questions[currentQuestionIndex];
-    questionElement.textContent = currentQuestion.question;
-    choicesElement.innerHTML = '';
+function displayQuestion() {
+    const currentQuestion = quizQuestions[currentQuestionIndex];
+    questionContainer.textContent = currentQuestion.question;
+    choicesContainer.innerHTML = '';
+
     currentQuestion.choices.forEach((choice, index) => {
-        const button = document.createElement('button');
-        button.textContent = choice;
-        button.addEventListener('click', () => selectAnswer(index));
-        choicesElement.appendChild(button);
+        const choiceBtn = document.createElement('button');
+        choiceBtn.textContent = choice;
+        choiceBtn.setAttribute('data-index', index);
+        choiceBtn.addEventListener('click', checkAnswer);
+        choicesContainer.appendChild(choiceBtn);
     });
 }
 
-// Function to select an answer
-function selectAnswer(selectedIndex) {
-    const currentQuestion = questions[currentQuestionIndex];
-    if (selectedIndex === currentQuestion.correctAnswer) {
+// Function to check the selected answer
+function checkAnswer(event) {
+    const selectedChoiceIndex = parseInt(event.target.getAttribute('data-index'));
+    const currentQuestion = quizQuestions[currentQuestionIndex];
+
+    if (currentQuestion.choices[selectedChoiceIndex] === currentQuestion.correctAnswer) {
         score++;
     } else {
-        timer -= 10;
+        timeLeft -= 10; // Subtract time if the answer is incorrect
     }
+
     currentQuestionIndex++;
-    if (currentQuestionIndex < questions.length) {
-        showQuestion();
+    if (currentQuestionIndex < quizQuestions.length) {
+        displayQuestion();
     } else {
         endQuiz();
     }
 }
 
-// Function to end the quiz
-function endQuiz() {
-    clearInterval(timer);
-    quizContainer.style.display = 'none';
-    resultsContainer.style.display = 'block';
-    finalScoreElement.textContent = score;
-}
-
-// Function to start the timer
+// Start Timer
 function startTimer() {
-    let timeLeft = 60; 
-    timer = setInterval(() => {
+    timerInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft <= 0) {
-            clearInterval(timer);
+            clearInterval(timerInterval);
             endQuiz();
         }
     }, 1000);
 }
 
-// Function to handle submission of initials and high scores
+// Function to end the quiz
+function endQuiz() {
+    clearInterval(timerInterval);
+    questionContainer.textContent = '';
+    choicesContainer.innerHTML = '';
+    resultsContainer.style.display = 'block';
+    finalScoreSpan.textContent = score;
+}
+
+// Function to submit the score
 function submitScore() {
     const initials = initialsInput.value.trim();
     if (initials !== '') {
-        const highScore = { initials: initials, score: score };
-        console.log(highScore); 
+        // Save score and initials to local storage
+        const highScores = JSON.parse(localStorage.getItem('highScores')) || [];
+        highScores.push({ initials, score });
+        localStorage.setItem('highScores', JSON.stringify(highScores));
+
+        // Display high scores on the page
+        displayHighScores(highScores);
+    } else {
+        alert('Please enter your initials.');
     }
 }
 
-// Event listeners
-startButton.addEventListener('click', startQuiz);
-submitScoreButton.addEventListener('click', submitScore);
+// Function to display high scores
+function displayHighScores(highScores) {
+    resultsContainer.innerHTML = ''; // Clear previous scores
+
+    // Display each high score
+    highScores.forEach((entry, index) => {
+        const scoreEntry = document.createElement('div');
+        scoreEntry.textContent = `${index + 1}. ${entry.initials}: ${entry.score}`;
+        resultsContainer.appendChild(scoreEntry);
+    });
+}
+
+// Event listener for the start button
+startBtn.addEventListener('click', startQuiz);
+
+// Event listener for submitting score
+submitScoreBtn.addEventListener('click', submitScore);
